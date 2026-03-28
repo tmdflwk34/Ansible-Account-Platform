@@ -1,0 +1,225 @@
+[
+  {
+    "timestamp": "2025-12-09T20:04:40.915686+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "test-team",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "push \uad8c\ud55c",
+    "status": "\uc720\uc9c0",
+    "details": "\ud300 test-team\uc758 acme-infra-account-manager \uc800\uc7a5\uc18c push \uad8c\ud55c\uc774 \uc774\ubbf8 \uc124\uc815\ub418\uc5b4 \uc788\uc2b5\ub2c8\ub2e4"
+  },
+  {
+    "timestamp": "2025-12-09T20:04:40.464729+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "p250001_mrna_llm2",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "push \uad8c\ud55c",
+    "status": "\uc720\uc9c0",
+    "details": "\ud300 p250001_mrna_llm2\uc758 acme-infra-account-manager \uc800\uc7a5\uc18c push \uad8c\ud55c\uc774 \uc774\ubbf8 \uc124\uc815\ub418\uc5b4 \uc788\uc2b5\ub2c8\ub2e4"
+  },
+  {
+    "timestamp": "2025-12-09T20:04:26.279661+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "test-team",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "push \uad8c\ud55c",
+    "status": "\uc644\ub8cc",
+    "details": "\ud300 test-team\uc5d0 acme-infra-account-manager \uc800\uc7a5\uc18c push \uad8c\ud55c \ubd80\uc5ec \uc644\ub8cc"
+  },
+  {
+    "timestamp": "2025-12-09T20:04:25.393077+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "p250001_mrna_llm2",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "push \uad8c\ud55c",
+    "status": "\uc644\ub8cc",
+    "details": "\ud300 p250001_mrna_llm2\uc5d0 acme-infra-account-manager \uc800\uc7a5\uc18c push \uad8c\ud55c \ubd80\uc5ec \uc644\ub8cc"
+  },
+  {
+    "timestamp": "2025-12-09T19:58:05.184986+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "test-team",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "admin \uad8c\ud55c",
+    "status": "\uc644\ub8cc",
+    "details": "\ud300 test-team\uc5d0 acme-infra-account-manager \uc800\uc7a5\uc18c admin \uad8c\ud55c \ubd80\uc5ec \uc644\ub8cc"
+  },
+  {
+    "timestamp": "2025-12-09T19:58:04.094566+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "p250001_mrna_llm2",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "admin \uad8c\ud55c",
+    "status": "\uc644\ub8cc",
+    "details": "\ud300 p250001_mrna_llm2\uc5d0 acme-infra-account-manager \uc800\uc7a5\uc18c admin \uad8c\ud55c \ubd80\uc5ec \uc644\ub8cc"
+  },
+  {
+    "timestamp": "2025-12-09T19:57:48.801857+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "test-team",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "push \uad8c\ud55c",
+    "status": "\uc644\ub8cc",
+    "details": "\ud300 test-team\uc5d0 acme-infra-account-manager \uc800\uc7a5\uc18c push \uad8c\ud55c \ubd80\uc5ec \uc644\ub8cc"
+  },
+  {
+    "timestamp": "2025-12-09T19:57:47.903028+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "p250001_mrna_llm2",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "push \uad8c\ud55c",
+    "status": "\uc644\ub8cc",
+    "details": "\ud300 p250001_mrna_llm2\uc5d0 acme-infra-account-manager \uc800\uc7a5\uc18c push \uad8c\ud55c \ubd80\uc5ec \uc644\ub8cc"
+  },
+  {
+    "timestamp": "2025-12-09T19:56:23.788004+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "test-team",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "pull \uad8c\ud55c",
+    "status": "\uc720\uc9c0",
+    "details": "\ud300 test-team\uc758 acme-infra-account-manager \uc800\uc7a5\uc18c pull \uad8c\ud55c\uc774 \uc774\ubbf8 \uc124\uc815\ub418\uc5b4 \uc788\uc2b5\ub2c8\ub2e4"
+  },
+  {
+    "timestamp": "2025-12-09T19:56:23.308275+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "p250001_mrna_llm2",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "pull \uad8c\ud55c",
+    "status": "\uc720\uc9c0",
+    "details": "\ud300 p250001_mrna_llm2\uc758 acme-infra-account-manager \uc800\uc7a5\uc18c pull \uad8c\ud55c\uc774 \uc774\ubbf8 \uc124\uc815\ub418\uc5b4 \uc788\uc2b5\ub2c8\ub2e4"
+  },
+  {
+    "timestamp": "2025-12-09T19:56:15.304086+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "test-team",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "pull \uad8c\ud55c",
+    "status": "\uc644\ub8cc",
+    "details": "\ud300 test-team\uc5d0 acme-infra-account-manager \uc800\uc7a5\uc18c pull \uad8c\ud55c \ubd80\uc5ec \uc644\ub8cc"
+  },
+  {
+    "timestamp": "2025-12-09T19:56:14.184514+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "p250001_mrna_llm2",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "pull \uad8c\ud55c",
+    "status": "\uc644\ub8cc",
+    "details": "\ud300 p250001_mrna_llm2\uc5d0 acme-infra-account-manager \uc800\uc7a5\uc18c pull \uad8c\ud55c \ubd80\uc5ec \uc644\ub8cc"
+  },
+  {
+    "timestamp": "2025-12-09T19:56:03.700534+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "test-team",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "push \uad8c\ud55c",
+    "status": "\uc720\uc9c0",
+    "details": "\ud300 test-team\uc758 acme-infra-account-manager \uc800\uc7a5\uc18c push \uad8c\ud55c\uc774 \uc774\ubbf8 \uc124\uc815\ub418\uc5b4 \uc788\uc2b5\ub2c8\ub2e4"
+  },
+  {
+    "timestamp": "2025-12-09T19:56:03.192127+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "p250001_mrna_llm2",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "push \uad8c\ud55c",
+    "status": "\uc644\ub8cc",
+    "details": "\ud300 p250001_mrna_llm2\uc5d0 acme-infra-account-manager \uc800\uc7a5\uc18c push \uad8c\ud55c \ubd80\uc5ec \uc644\ub8cc"
+  },
+  {
+    "timestamp": "2025-12-09T19:55:54.551114+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "test-team",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "push \uad8c\ud55c",
+    "status": "\uc720\uc9c0",
+    "details": "\ud300 test-team\uc758 acme-infra-account-manager \uc800\uc7a5\uc18c push \uad8c\ud55c\uc774 \uc774\ubbf8 \uc124\uc815\ub418\uc5b4 \uc788\uc2b5\ub2c8\ub2e4"
+  },
+  {
+    "timestamp": "2025-12-09T19:46:45.468698+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "mi25001_utr_diffusion",
+    "region": "acme-ai",
+    "instance": "CDS-BART",
+    "instance_name": "pull \uad8c\ud55c",
+    "status": "\uc2e4\ud328",
+    "reason": "GitHub API \ud638\ucd9c \uc2e4\ud328",
+    "details": "\ud300 mi25001_utr_diffusion\uc5d0 CDS-BART \uc800\uc7a5\uc18c \uad8c\ud55c \ubd80\uc5ec \uc2e4\ud328"
+  },
+  {
+    "timestamp": "2025-12-09T19:45:23.711038+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "mi25001_utr_diffusion",
+    "region": "acme-ai",
+    "instance": "CDS-BART",
+    "instance_name": "pull \uad8c\ud55c",
+    "status": "\uc2e4\ud328",
+    "reason": "GitHub API \ud638\ucd9c \uc2e4\ud328",
+    "details": "\ud300 mi25001_utr_diffusion\uc5d0 CDS-BART \uc800\uc7a5\uc18c \uad8c\ud55c \ubd80\uc5ec \uc2e4\ud328"
+  },
+  {
+    "timestamp": "2025-12-09T19:45:13.046215+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "mi25001_utr_diffusion",
+    "region": "acme-ai",
+    "instance": "CDS-BART",
+    "instance_name": "pull \uad8c\ud55c",
+    "status": "\uc2e4\ud328",
+    "reason": "GitHub API \ud638\ucd9c \uc2e4\ud328",
+    "details": "\ud300 mi25001_utr_diffusion\uc5d0 CDS-BART \uc800\uc7a5\uc18c \uad8c\ud55c \ubd80\uc5ec \uc2e4\ud328"
+  },
+  {
+    "timestamp": "2025-12-09T15:16:06.496973+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "test-team",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "push \uad8c\ud55c",
+    "status": "\uc644\ub8cc",
+    "details": "\ud300 test-team\uc5d0 acme-infra-account-manager \uc800\uc7a5\uc18c push \uad8c\ud55c \ubd80\uc5ec \uc644\ub8cc"
+  },
+  {
+    "timestamp": "2025-12-09T15:16:02.526935+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "test-team",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "pull \uad8c\ud55c",
+    "status": "\uc720\uc9c0",
+    "details": "\ud300 test-team\uc758 acme-infra-account-manager \uc800\uc7a5\uc18c pull \uad8c\ud55c\uc774 \uc774\ubbf8 \uc124\uc815\ub418\uc5b4 \uc788\uc2b5\ub2c8\ub2e4"
+  },
+  {
+    "timestamp": "2025-12-09T15:15:59.148371+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "test-team",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "pull \uad8c\ud55c",
+    "status": "\uc644\ub8cc",
+    "details": "\ud300 test-team\uc5d0 acme-infra-account-manager \uc800\uc7a5\uc18c pull \uad8c\ud55c \ubd80\uc5ec \uc644\ub8cc"
+  },
+  {
+    "timestamp": "2025-12-09T14:53:23.442245+09:00",
+    "action": "GitHub \uad8c\ud55c \uad00\ub9ac",
+    "username": "test-team",
+    "region": "acme-ai",
+    "instance": "acme-infra-account-manager",
+    "instance_name": "admin \uad8c\ud55c",
+    "status": "\uc644\ub8cc",
+    "details": "\ud300 test-team\uc5d0 acme-infra-account-manager \uc800\uc7a5\uc18c admin \uad8c\ud55c \ubd80\uc5ec \uc644\ub8cc"
+  }
+]

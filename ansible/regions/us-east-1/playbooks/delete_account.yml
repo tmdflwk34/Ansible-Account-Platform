@@ -1,0 +1,53 @@
+---
+- name: Delete Linux user using SSM
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Execute SSM command to delete user
+      shell: |
+        python3 << 'PYTHON_EOF'
+        import boto3
+        import time
+        import sys
+        
+        ssm = boto3.client('ssm', region_name='us-east-1')
+        
+        username = '{{ username }}'
+        instance_id = '{{ instance_ids }}'
+        
+        commands = [
+            f'userdel -r {username}',
+            f'rm -f /etc/sudoers.d/{username}'
+        ]
+        
+        response = ssm.send_command(
+            InstanceIds=[instance_id],
+            DocumentName='AWS-RunShellScript',
+            Parameters={'commands': commands}
+        )
+        
+        command_id = response['Command']['CommandId']
+        
+        for _ in range(30):
+            time.sleep(2)
+            result = ssm.get_command_invocation(
+                CommandId=command_id,
+                InstanceId=instance_id
+            )
+            if result['Status'] in ['Success', 'Failed', 'Cancelled', 'TimedOut']:
+                break
+        
+        if result['Status'] != 'Success':
+            print(f"Command failed: {result['Status']}")
+            print(f"Output: {result.get('StandardOutputContent', '')}")
+            print(f"Error: {result.get('StandardErrorContent', '')}")
+            sys.exit(1)
+        else:
+            print(f"User {username} deleted successfully")
+        PYTHON_EOF
+      register: result
+      
+    - name: Show result
+      debug:
+        var: result.stdout_lines

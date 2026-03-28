@@ -1,0 +1,86 @@
+---
+- name: Update user role using SSM
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Execute SSM command to update user role
+      shell: |
+        python3 << 'PYTHON_EOF'
+        import boto3
+        import time
+        import sys
+        
+        ssm = boto3.client('ssm', region_name='us-west-2')
+        
+        username = '{{ username }}'
+        role = '{{ role }}'
+        instance_id = '{{ instance_ids }}'
+        group_name = f'acme-{role}'
+        
+        check_cmd = ssm.send_command(
+            InstanceIds=[instance_id],
+            DocumentName='AWS-RunShellScript',
+            Parameters={'commands': [f'id {username} 2>/dev/null || echo NOTFOUND']}
+        )
+        
+        time.sleep(2)
+        check_result = ssm.get_command_invocation(
+            CommandId=check_cmd['Command']['CommandId'],
+            InstanceId=instance_id
+        )
+        
+        output = check_result.get('StandardOutputContent', '')
+        
+        if 'NOTFOUND' in output:
+            print(f"Error: User {username} does not exist")
+            sys.exit(1)
+        
+        if f'gid=' in output and group_name in output:
+            print(f"SKIP: User {username} already has {role} role")
+            sys.exit(0)
+        
+        if role == 'admin':
+            sudoers = '%acme-admin ALL=(ALL) NOPASSWD: ALL'
+        elif role == 'ops':
+            sudoers = 'Cmnd_Alias OPS_CMDS = /usr/bin/systemctl restart *, /usr/bin/systemctl status *, /usr/bin/journalctl *, /usr/bin/docker logs *, /usr/bin/docker ps, /usr/bin/tail *, /bin/cat /var/log/*\n%moham-ops ALL=(ALL) NOPASSWD: OPS_CMDS\n%moham-ops ALL=(ALL) NOPASSWD: !/usr/bin/systemctl stop *\n%moham-ops ALL=(ALL) NOPASSWD: !/usr/bin/systemctl disable *'
+        else:
+            sudoers = '%acme-user ALL=(ALL) NOPASSWD: /usr/bin/systemctl status *, /usr/bin/journalctl *, /usr/bin/docker ps, /usr/bin/docker logs *'
+        
+        commands = [
+            f'groupadd {group_name} 2>/dev/null || true',
+            f'usermod -g {group_name} {username}',
+            f'cat > /etc/sudoers.d/{username} << "EOF"\n{sudoers}\nEOF',
+            f'chmod 0440 /etc/sudoers.d/{username}'
+        ]
+        
+        response = ssm.send_command(
+            InstanceIds=[instance_id],
+            DocumentName='AWS-RunShellScript',
+            Parameters={'commands': commands}
+        )
+        
+        command_id = response['Command']['CommandId']
+        
+        for _ in range(30):
+            time.sleep(2)
+            result = ssm.get_command_invocation(
+                CommandId=command_id,
+                InstanceId=instance_id
+            )
+            if result['Status'] in ['Success', 'Failed', 'Cancelled', 'TimedOut']:
+                break
+        
+        if result['Status'] != 'Success':
+            print(f"Command failed: {result['Status']}")
+            print(f"Output: {result.get('StandardOutputContent', '')}")
+            print(f"Error: {result.get('StandardErrorContent', '')}")
+            sys.exit(1)
+        else:
+            print(f"User {username} role updated to {role} (group {group_name})")
+        PYTHON_EOF
+      register: result
+      
+    - name: Show result
+      debug:
+        var: result.stdout_lines

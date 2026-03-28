@@ -1,0 +1,84 @@
+---
+- name: Create Linux user using SSM
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Execute SSM command to create user
+      shell: |
+        python3 << 'PYTHON_EOF'
+        import boto3
+        import time
+        import sys
+        
+        ssm = boto3.client('ssm', region_name='us-east-1')
+        
+        username = '{{ username }}'
+        role = '{{ role }}'
+        instance_id = '{{ instance_ids }}'
+        
+        # 중복 체크
+        check_cmd = ssm.send_command(
+            InstanceIds=[instance_id],
+            DocumentName='AWS-RunShellScript',
+            Parameters={'commands': [f'id {username} 2>/dev/null && echo EXISTS || echo NOTFOUND']}
+        )
+        
+        time.sleep(2)
+        check_result = ssm.get_command_invocation(
+            CommandId=check_cmd['Command']['CommandId'],
+            InstanceId=instance_id
+        )
+        
+        if 'EXISTS' in check_result.get('StandardOutputContent', ''):
+            print(f"Error: User {username} already exists")
+            sys.exit(1)
+        
+        sudoers_content = {
+            'admin': '%acme-admin ALL=(ALL) NOPASSWD: ALL',
+            'ops': '''Cmnd_Alias OPS_CMDS = /usr/bin/systemctl restart *, /usr/bin/systemctl status *, /usr/bin/journalctl *, /usr/bin/docker logs *, /usr/bin/docker ps, /usr/bin/tail *, /bin/cat /var/log/*
+        %moham-ops ALL=(ALL) NOPASSWD: OPS_CMDS
+        %moham-ops ALL=(ALL) NOPASSWD: !/usr/bin/systemctl stop *
+        %moham-ops ALL=(ALL) NOPASSWD: !/usr/bin/systemctl disable *''',
+            'user': '%acme-user ALL=(ALL) NOPASSWD: /usr/bin/systemctl status *, /usr/bin/journalctl *, /usr/bin/docker ps, /usr/bin/docker logs *'
+        }
+        
+        group_name = f'acme-{role}'
+        
+        commands = [
+            f'groupadd {group_name} 2>/dev/null || true',
+            f'useradd -m -s /bin/bash -g {group_name} {username}',
+            f'cat > /etc/sudoers.d/{username} << "SUDOERS_EOF"\n{sudoers_content[role]}\nSUDOERS_EOF',
+            f'chmod 0440 /etc/sudoers.d/{username}'
+        ]
+        
+        response = ssm.send_command(
+            InstanceIds=[instance_id],
+            DocumentName='AWS-RunShellScript',
+            Parameters={'commands': commands}
+        )
+        
+        command_id = response['Command']['CommandId']
+        
+        for _ in range(30):
+            time.sleep(2)
+            result = ssm.get_command_invocation(
+                CommandId=command_id,
+                InstanceId=instance_id
+            )
+            if result['Status'] in ['Success', 'Failed', 'Cancelled', 'TimedOut']:
+                break
+        
+        if result['Status'] != 'Success':
+            print(f"Command failed: {result['Status']}")
+            print(f"Output: {result.get('StandardOutputContent', '')}")
+            print(f"Error: {result.get('StandardErrorContent', '')}")
+            sys.exit(1)
+        else:
+            print(f"User {username} created successfully in group {group_name}")
+        PYTHON_EOF
+      register: result
+      
+    - name: Show result
+      debug:
+        var: result.stdout_lines

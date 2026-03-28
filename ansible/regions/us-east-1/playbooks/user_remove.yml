@@ -1,0 +1,99 @@
+---
+- name: "Remove user safely: remove from acme groups, delete account, delete sudoers"
+  hosts: localhost
+  gather_facts: false
+
+  vars_files:
+    - /home/app/ansible/regions/us-east-1/group_vars/region.yml
+
+  tasks:
+
+    ##################################################################
+    # 1) 사용자 존재 여부 체크 (정보 출력용, 실패 없음)
+    ##################################################################
+    - name: Check if user exists
+      shell: |
+        aws ssm send-command \
+          --region {{ aws_region }} \
+          --instance-ids {{ instance_id }} \
+          --document-name "AWS-RunShellScript" \
+          --parameters '{"commands":["id -u {{ username }} >/dev/null 2>&1 && echo EXISTS || echo NO"]}'
+      register: user_check_cmd
+      changed_when: false
+
+    - name: Print check result
+      debug:
+        msg: "User existence check sent (actual state will be reflected on EC2)."
+
+
+    ##################################################################
+    # 2) acme-* 그룹에서 사용자 제거 (그룹 자체는 유지)
+    ##################################################################
+    - name: Remove user from acme-* groups
+      shell: |
+        aws ssm send-command \
+          --region {{ aws_region }} \
+          --instance-ids {{ instance_id }} \
+          --document-name "AWS-RunShellScript" \
+          --parameters '{"commands":[
+            "for g in $(id -nG {{ username }} 2>/dev/null | tr \" \" \"\\n\" | grep '^acme-' || true); do sudo gpasswd -d {{ username }} $g || true; done"
+          ]}'
+      register: remove_groups_output
+
+
+    ##################################################################
+    # 3) sudoers.d/username 제거
+    ##################################################################
+    - name: Delete sudoers file for user
+      shell: |
+        aws ssm send-command \
+          --region {{ aws_region }} \
+          --instance-ids {{ instance_id }} \
+          --document-name "AWS-RunShellScript" \
+          --parameters '{"commands":[
+            "sudo rm -f /etc/sudoers.d/{{ username }}"
+          ]}'
+      register: remove_sudoers_output
+
+
+    ##################################################################
+    # 4) 사용자 계정 삭제 (-r: 홈 디렉터리 포함)
+    ##################################################################
+    - name: Delete user account (-r)
+      shell: |
+        aws ssm send-command \
+          --region {{ aws_region }} \
+          --instance-ids {{ instance_id }} \
+          --document-name "AWS-RunShellScript" \
+          --parameters '{"commands":[
+            "sudo userdel -r {{ username }} || true"
+          ]}'
+      register: delete_user_output
+
+
+    ##################################################################
+    # 5) 사용자 Primary Group 삭제 (acme 그룹 삭제 아님)
+    ##################################################################
+    - name: Delete primary group only (group=name)
+      shell: |
+        aws ssm send-command \
+          --region {{ aws_region }} \
+          --instance-ids {{ instance_id }} \
+          --document-name "AWS-RunShellScript" \
+          --parameters '{"commands":[
+            "sudo groupdel {{ username }} || true"
+          ]}'
+      register: delete_group_output
+
+
+    ##################################################################
+    # 6) 결과 출력
+    ##################################################################
+    - name: Removal summary
+      debug:
+        msg:
+          - "Removed user from acme-* groups: {{ remove_groups_output.stdout }}"
+          - "Deleted sudoers.d file: {{ remove_sudoers_output.stdout }}"
+          - "User deleted: {{ delete_user_output.stdout }}"
+          - "Primary group deleted: {{ delete_group_output.stdout }}"
+

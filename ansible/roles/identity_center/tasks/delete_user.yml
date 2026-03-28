@@ -1,0 +1,15 @@
+- name: Get user id
+  command: >
+    aws identitystore list-users
+    --identity-store-id {{ identity_store_id }}
+  register: users
+
+- set_fact:
+    userid: "{{ users.stdout | from_json | json_query('Users[?UserName==`'+test_username+'`].UserId') | first }}"
+
+- name: Delete Identity Center User
+  command: >
+    aws identitystore delete-user
+    --identity-store-id {{ identity_store_id }}
+    --user-id {{ userid }}
+  when: userid is defined

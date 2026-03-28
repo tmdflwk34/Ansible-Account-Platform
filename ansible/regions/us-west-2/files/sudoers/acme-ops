@@ -1,0 +1,62 @@
+# acme-ops: 운영팀 권한 (admin 기반)
+# 시스템 모니터링, Docker, Slurm 관리 가능
+
+# 패키지 관리 (비밀번호 필요)
+%acme-ops ALL=(ALL) /usr/bin/yum, /usr/bin/apt, /usr/bin/apt-get, /usr/bin/snap
+
+# 시스템 모니터링 및 관리 (NOPASSWD)
+%acme-ops ALL=(root) NOPASSWD: /usr/bin/systemctl status *, \
+                                 /usr/bin/systemctl list-units, \
+                                 /usr/bin/systemctl list-unit-files, \
+                                 /usr/bin/journalctl *, \
+                                 /usr/bin/ps aux, \
+                                 /usr/bin/top, \
+                                 /usr/bin/htop, \
+                                 /usr/bin/df -h, \
+                                 /usr/bin/free -h, \
+                                 /usr/bin/lsof
+
+# Slurm 관리 (NOPASSWD)
+%acme-ops ALL=(root) NOPASSWD: /opt/slurm/bin/sinfo, \
+                                 /opt/slurm/bin/squeue, \
+                                 /usr/bin/systemctl reload slurmctld, \
+                                 /usr/bin/systemctl restart slurmctld, \
+                                 /usr/bin/systemctl daemon-reload
+
+# Docker 관리 (NOPASSWD)
+%acme-ops ALL=(root) NOPASSWD: /usr/bin/docker ps *, \
+                                 /usr/bin/docker run *, \
+                                 /usr/bin/docker ls *, \
+                                 /usr/bin/docker rm *, \
+                                 /usr/bin/docker images *, \
+                                 /usr/bin/docker exec *, \
+                                 /usr/bin/docker build *, \
+                                 /usr/bin/docker tag *, \
+                                 /usr/bin/docker push *, \
+                                 /usr/bin/docker logs *
+
+# 파일 편집 (NOPASSWD)
+%acme-ops ALL=(root) NOPASSWD: /usr/bin/vim /etc/slurm/slurm.conf, \
+                                 /usr/bin/vim /etc/hosts
+
+# 사용자 그룹 관리 (NOPASSWD)
+%acme-ops ALL=(root) NOPASSWD: /usr/sbin/gpasswd -a * *, \
+                                 /usr/sbin/gpasswd -d * *
+
+# 명시적 제한
+%acme-ops ALL=(ALL) !/usr/bin/sudo -i, \
+                     !/bin/su -, \
+                     !/usr/bin/sudo /bin/bash, \
+                     !/usr/bin/sudo /bin/sh, \
+                     !/usr/bin/systemctl stop slurmctld, \
+                     !/usr/bin/systemctl disable slurmctld, \
+                     !/usr/bin/systemctl poweroff, \
+                     !/usr/bin/systemctl reboot, \
+                     !/usr/sbin/shutdown *, \
+                     !/sbin/init *, \
+                     !/usr/sbin/reboot, \
+                     !/usr/bin/passwd root, \
+                     !/usr/sbin/visudo, \
+                     !/usr/bin/vim /etc/passwd, \
+                     !/usr/bin/vim /etc/shadow, \
+                     !/usr/bin/vim /etc/sudoers*

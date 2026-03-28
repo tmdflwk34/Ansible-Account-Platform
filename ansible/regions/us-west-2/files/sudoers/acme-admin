@@ -1,0 +1,34 @@
+# acme-admin: 관리자급이지만 root 위험 명령 제외
+Cmnd_Alias ADMIN_SAFE_CMDS = /usr/bin/systemctl start *, \
+                             /usr/bin/systemctl restart *, \
+                             /usr/bin/systemctl status *, \
+                             /usr/bin/docker *, \
+                             /usr/bin/journalctl *, \
+                             /usr/bin/tail *, \
+                             /usr/bin/cat /var/log/*, \
+                             /usr/bin/yum *, \
+                             /usr/bin/apt *, \
+                             /usr/bin/find *, \
+                             /usr/bin/grep *, \
+                             /usr/bin/vi *, \
+                             /usr/bin/nano *, \
+                             /usr/bin/chmod *, \
+                             /usr/bin/chown *, \
+                             /usr/bin/mkdir *, \
+                             /usr/bin/rm *, \
+                             /usr/bin/mv *
+
+Cmnd_Alias ADMIN_FORBIDDEN_CMDS = /usr/sbin/reboot, \
+                                  /usr/sbin/shutdown, \
+                                  /usr/sbin/fdisk, \
+                                  /usr/sbin/mkfs.*, \
+                                  /usr/sbin/useradd, \
+                                  /usr/sbin/userdel, \
+                                  /usr/sbin/groupadd, \
+                                  /usr/sbin/groupdel, \
+                                  /usr/bin/visudo, \
+                                  /usr/sbin/service stop *, \
+                                  /usr/sbin/systemctl stop *
+
+%moham-admin ALL=(ALL) NOPASSWD: ADMIN_SAFE_CMDS
+%moham-admin ALL=(ALL) NOPASSWD: !ADMIN_FORBIDDEN_CMDS

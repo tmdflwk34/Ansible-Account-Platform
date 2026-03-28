@@ -1,0 +1,13 @@
+- name: Revoke sudo via SSM (Oregon)
+  hosts: localhost
+  vars:
+    instance_id: "{{ instance_id }}"
+    username: "{{ username }}"
+  tasks:
+    - name: Run SSM sudo revoke script
+      command: >
+        aws ssm send-command
+        --region {{ aws_region }}
+        --instance-ids {{ instance_id }}
+        --document-name {{ ssm_document }}
+        --parameters commands="['/bin/bash -c \"$(cat scripts/ssm_sudo.sh) {{username}} revoke\"']"

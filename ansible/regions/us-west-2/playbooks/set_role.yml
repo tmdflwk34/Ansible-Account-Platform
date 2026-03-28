@@ -1,0 +1,25 @@
+---
+- name: Apply sudo role to user via SSM
+  hosts: localhost
+  vars:
+    instance_id: ""
+    username: ""
+    role: ""     # acme-admin, acme-ops, acme-user
+  tasks:
+
+    - name: Upload sudoers file to SSM target
+      command: >
+        aws ssm send-command
+        --region {{ aws_region }}
+        --instance-ids {{ instance_id }}
+        --document-name AWS-RunShellScript
+        --parameters commands=["aws s3 cp s3://mybucket/sudoers/{{ role }} /tmp/{{ username }}"]
+      when: false
+
+    - name: Apply sudoer to EC2
+      command: >
+        aws ssm send-command
+        --region {{ aws_region }}
+        --instance-ids {{ instance_id }}
+        --document-name AWS-RunShellScript
+        --parameters commands=["sudo bash -c 'cat <<EOF2 >/etc/sudoers.d/{{ username }}' \$(cat ../files/sudoers/{{ role }}) EOF2"]

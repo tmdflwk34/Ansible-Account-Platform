@@ -1,0 +1,6 @@
+- name: Grant sudo via SSM
+  command: >
+    aws ssm send-command
+    --instance-ids {{ instance_id }}
+    --document-name "AWS-RunShellScript"
+    --parameters commands="['/bin/bash -c \"$(cat scripts/ssm_sudo.sh)\" {{username}} grant']"

@@ -1,0 +1,11 @@
+- name: Create Identity Center User
+  command: >
+    aws identitystore create-user
+    --identity-store-id {{ identity_store_id }}
+    --user-name {{ test_username }}
+    --emails '[{"Value":"{{ test_email }}","Type":"work"}]'
+  register: output
+  ignore_errors: yes
+
+- debug:
+    msg: "{{ output.stdout }}"

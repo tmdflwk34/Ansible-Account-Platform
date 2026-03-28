@@ -1,0 +1,96 @@
+---
+- name: "User lifecycle: groups, user creation, role assignment, group-based sudoers"
+  hosts: localhost
+  gather_facts: false
+
+  vars_files:
+    - /home/app/ansible/regions/us-east-1/group_vars/region.yml
+
+  vars:
+    allowed_roles: [admin, ops, user]
+
+  tasks:
+
+    - name: Validate role argument
+      fail:
+        msg: "Invalid role '{{ role }}'. Allowed roles: admin / ops / user"
+      when: role not in allowed_roles
+
+
+    - name: Ensure acme groups exist on EC2
+      shell: |
+        aws ssm send-command \
+          --region {{ aws_region }} \
+          --instance-ids {{ instance_id }} \
+          --document-name AWS-RunShellScript \
+          --parameters '{"commands":[
+            "getent group acme-admin || sudo groupadd acme-admin",
+            "getent group acme-ops || sudo groupadd acme-ops",
+            "getent group acme-user || sudo groupadd acme-user"
+          ]}'
+      register: create_groups_output
+
+
+    - name: Create user on EC2 with NO private group
+      shell: |
+        aws ssm send-command \
+          --region {{ aws_region }} \
+          --instance-ids {{ instance_id }} \
+          --document-name AWS-RunShellScript \
+          --parameters '{"commands":[
+            "id -u {{ username }} >/dev/null 2>&1 || sudo useradd -m -s /bin/bash -N -g acme-{{ role }} {{ username }}"
+          ]}'
+      register: create_user_output
+
+
+    - name: Remove all acme-* groups from user (role change safety)
+      shell: |
+        aws ssm send-command \
+          --region {{ aws_region }} \
+          --instance-ids {{ instance_id }} \
+          --document-name AWS-RunShellScript \
+          --parameters '{"commands":[
+            "for g in $(id -nG {{ username }} 2>/dev/null | tr \" \" \"\\n\" | grep '^acme-' || true); do sudo gpasswd -d {{ username }} $g || true; done"
+          ]}'
+      register: remove_old_groups_output
+
+
+    - name: Add user to acme-{{ role }} group
+      shell: |
+        aws ssm send-command \
+          --region {{ aws_region }} \
+          --instance-ids {{ instance_id }} \
+          --document-name AWS-RunShellScript \
+          --parameters '{"commands":[
+            "sudo usermod -aG acme-{{ role }} {{ username }}"
+          ]}'
+      register: add_user_to_group_output
+
+
+    - name: Read sudoers template
+      slurp:
+        src: "/home/app/ansible/regions/us-east-1/files/sudoers/acme-{{ role }}"
+      register: sudoers_raw
+
+
+    - name: Apply group-based sudoers file on EC2
+      shell: |
+        aws ssm send-command \
+          --region {{ aws_region }} \
+          --instance-ids {{ instance_id }} \
+          --document-name AWS-RunShellScript \
+          --parameters '{"commands":[
+            "echo {{ sudoers_raw.content }} | base64 -d | sudo tee /etc/sudoers.d/acme-{{ role }} > /dev/null",
+            "sudo chmod 440 /etc/sudoers.d/acme-{{ role }}"
+          ]}'
+      register: sudoers_apply_output
+
+
+    - name: Show results
+      debug:
+        msg:
+          - "Groups ensured: {{ create_groups_output.stdout }}"
+          - "User creation: {{ create_user_output.stdout }}"
+          - "Old groups removed: {{ remove_old_groups_output.stdout }}"
+          - "New group assignment: {{ add_user_to_group_output.stdout }}"
+          - "Group sudoers applied: {{ sudoers_apply_output.stdout }}"

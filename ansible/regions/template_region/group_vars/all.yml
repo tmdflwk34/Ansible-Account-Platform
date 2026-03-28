@@ -1,0 +1,2 @@
+aws_region: "<CHANGE_ME>"
+ssm_document: "AWS-RunShellScript"

@@ -1,0 +1,46 @@
+schemaVersion: '0.3'
+description: "Change user role via Ansible + SSM Automation (multi-region support)"
+
+parameters:
+  username:
+    type: String
+    description: "역할 변경 대상 사용자"
+
+  role:
+    type: String
+    description: "부여할 역할(admin / ops / user)"
+    allowedValues:
+      - admin
+      - ops
+      - user
+
+  region:
+    type: String
+    description: "대상 EC2 리전"
+    allowedValues:
+      - us-east-1
+      - us-west-2
+      - ap-northeast-2
+      - ap-northeast-1
+      - eu-west-1
+
+  instanceId:
+    type: String
+    description: "대상 EC2 인스턴스 ID"
+
+mainSteps:
+  - name: ChangeRoleWithAnsible
+    action: "aws:runCommand"
+    timeoutSeconds: 3600
+    onFailure: Abort
+    inputs:
+      DocumentName: "AWS-RunShellScript"
+      InstanceIds:
+        - "{{ instanceId }}"
+      Parameters:
+        commands:
+          - |
+            docker exec ansible-runner \
+              ansible-playbook /home/app/ansible/regions/{{ region }}/playbooks/create_and_assign_user.yml \
+              -e "username={{ username }} role={{ role }} instance_id={{ instanceId }} aws_region={{ region }}"
+

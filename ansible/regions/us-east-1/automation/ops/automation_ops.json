@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "0.3",
+  "description": "Apply acme-ops sudoers to target EC2",
+  "parameters": {
+    "InstanceId": {
+      "type": "String",
+      "description": "EC2 instance ID"
+    }
+  },
+  "mainSteps": [
+    {
+      "name": "ApplyOpsSudoers",
+      "action": "aws:runCommand",
+      "inputs": {
+        "DocumentName": "AWS-RunShellScript",
+        "InstanceIds": ["{{ InstanceId }}"],
+        "Parameters": {
+          "commands": [
+            "echo \"$(cat /home/app/ansible/regions/us-east-1/automation/ops/ops.b64)\" | base64 -d | sudo tee /etc/sudoers.d/acme-ops > /dev/null",
+            "sudo chmod 440 /etc/sudoers.d/acme-ops"
+          ]
+        }
+      }
+    }
+  ]
+}

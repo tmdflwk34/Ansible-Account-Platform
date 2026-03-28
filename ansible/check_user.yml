@@ -1,0 +1,42 @@
+---
+- name: 사용자 중복 체크
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Check if user exists
+      shell: |
+        python3 << 'PYTHON_EOF'
+        import boto3
+        import time
+        import json
+        
+        region = '{{ region }}'
+        instance_id = '{{ instance_id }}'
+        username = '{{ username }}'
+        
+        ssm = boto3.client('ssm', region_name=region)
+        
+        response = ssm.send_command(
+            InstanceIds=[instance_id],
+            DocumentName='AWS-RunShellScript',
+            Parameters={'commands': [f'id {username} 2>/dev/null && echo EXISTS || echo NOTFOUND']}
+        )
+        
+        command_id = response['Command']['CommandId']
+        time.sleep(2)
+        
+        result = ssm.get_command_invocation(
+            CommandId=command_id,
+            InstanceId=instance_id
+        )
+        
+        output = result.get('StandardOutputContent', '')
+        print(json.dumps({'exists': 'EXISTS' in output}))
+        PYTHON_EOF
+      register: check_result
+      changed_when: false
+      
+    - name: Output result
+      debug:
+        var: check_result.stdout

@@ -1,0 +1,227 @@
+---
+- name: IAM Identity Center 사용자 생성 및 이메일 발송
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Create SSO user and send email
+      shell: |
+        python3 << 'PYTHON_EOF'
+        import boto3
+        import json
+        
+        email = '{{ email }}'
+        permission_set_arns = {{ permission_set_arns | to_json }}
+        sso_group_ids = {{ sso_group_ids | default([]) | to_json }}
+        
+        sso = boto3.client('sso-admin', region_name='us-east-1')
+        identitystore = boto3.client('identitystore', region_name='us-east-1')
+        ses = boto3.client('ses', region_name='us-east-1')
+        
+        # 인스턴스 정보
+        instances = sso.list_instances()
+        instance_arn = instances['Instances'][0]['InstanceArn']
+        identity_store_id = instances['Instances'][0]['IdentityStoreId']
+        
+        # 이메일 파싱
+        email_parts = email.split('@')[0].split('.')
+        given_name = email_parts[0] if len(email_parts) > 0 else "User"
+        family_name = email_parts[1] if len(email_parts) > 1 else "Name"
+        display_name = f"{given_name} {family_name}"
+        
+        # 사용자 생성
+        user_exists = False
+        try:
+            user_response = identitystore.create_user(
+                IdentityStoreId=identity_store_id,
+                UserName=email,
+                Name={
+                    'GivenName': given_name,
+                    'FamilyName': family_name,
+                    'Formatted': display_name
+                },
+                DisplayName=display_name,
+                Emails=[{
+                    'Value': email,
+                    'Type': 'work',
+                    'Primary': True
+                }]
+            )
+            user_id = user_response['UserId']
+            print(f"Created user: {email} (ID: {user_id})")
+        except identitystore.exceptions.ConflictException:
+            user_exists = True
+            users = identitystore.list_users(
+                IdentityStoreId=identity_store_id,
+                Filters=[{
+                    'AttributePath': 'UserName',
+                    'AttributeValue': email
+                }]
+            )
+            if users.get('Users'):
+                user_id = users['Users'][0]['UserId']
+                print(f"User already exists: {email} (ID: {user_id})")
+            else:
+                raise Exception("User lookup failed")
+        
+        # SSO 그룹에 사용자 추가
+        for group_id in sso_group_ids:
+            try:
+                identitystore.create_group_membership(
+                    IdentityStoreId=identity_store_id,
+                    GroupId=group_id,
+                    MemberId={'UserId': user_id}
+                )
+                print(f"Added user to group: {group_id}")
+            except identitystore.exceptions.ConflictException:
+                print(f"User already in group: {group_id}")
+            except Exception as e:
+                print(f"Failed to add to group {group_id}: {str(e)}")
+        
+        # SSO Start URL
+        start_url = 'https://d-906617189d.awsapps.com/start'
+        
+        # SES 이메일 발송
+        if not user_exists:
+            email_subject = "서버 신규 계정 생성 완료"
+            email_body = f"""서버 신규 계정 생성 완료 하여 아래 내용 참고하시어 사용자 초기 세팅 부탁드립니다.
+
+1. AWS identity center
+1-1. 아래의 링크로 접근하여 AWS identity center invite 메일 스팸 확인 후 계정 비밀번호 설정, MFA등록 진행
+{start_url}
+
+1-2. Kiro 어시스턴트 사용
+- Kiro 로그인 : "[ 중요 안내 ] Kiro ~" 첨부 메일 확인
+- Kiro MCP 세팅 : "251020_담당자_AmazonQ ~ " 첨부 파일 확인( AmazonQ == Kiro )
+
+2. AWS server
+macbook 터미널에서 .ssh/config 에 아래 '# 사용자 설정 사항' 과 같이 설정 후 
+% ssh r7
+명령어로 r7 instance에 접속할 수 있습니다. 
+첨부된 acme-kr-bastion-key.zip 파일을 압축 해제하여 .ssh 경로에 저장하고, config에서 acme3 부분은 본인 macbook 계정에 맞게 수정해주시기 바랍니다.
+
+# 사용자 설정 사항 
+# Bastion server (공통)
+Host Bastion
+    HostName 203.0.113.20
+    PreferredAuthentications publickey
+    IdentityFile /Users/acme3/.ssh/acme-kr-bastion-key.pem
+    User ec2-user
+ 
+# Main instances - {given_name} user
+Host g5
+    HostName 10.0.1.13
+    IdentityFile /Users/acme3/.ssh/acme-kr-bastion-key.pem
+    ProxyJump Bastion
+    User {given_name}
+ 
+Host r7
+    HostName 10.0.1.14
+    IdentityFile /Users/acme3/.ssh/acme-kr-bastion-key.pem
+    ProxyJump Bastion
+    User {given_name}
+ 
+Host head
+    HostName 10.0.1.15
+    IdentityFile /Users/acme3/.ssh/acme-kr-bastion-key.pem
+    ProxyJump Bastion
+    User {given_name}
+ 
+Host p4d
+    HostName 10.0.1.11
+    IdentityFile /Users/acme3/.ssh/acme-kr-bastion-key.pem
+    ProxyJump Bastion
+    User {given_name}
+ 
+Host p4de
+    HostName 10.0.1.12
+    IdentityFile /Users/acme3/.ssh/acme-kr-bastion-key.pem
+    ProxyJump Bastion
+    User {given_name}
+
+Host p5
+    HostName 10.0.2.11
+    IdentityFile /Users/acme3/.ssh/acme-kr-bastion-key.pem
+    ProxyJump Bastion
+    User {given_name}
+
+
+3. [권장] 개인 SSH 키 생성
+접속 확인 후, 보안을 위해 개인 SSH 키를 생성하여 사용하시기를 권장합니다.
+  $ ssh-keygen -t rsa -b 4096
+  $ cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+생성된 개인 키로 .ssh/config의 IdentityFile을 변경하시면 됩니다.
+
+진행 간 문의사항 있으실 경우 말씀 부탁드립니다.
+"""
+            
+            try:
+                # 첨부파일 준비 (S3에서 가져오기)
+                s3 = boto3.client('s3', region_name='us-east-1')
+                attachment_bucket = 'acme-or-cur-stg'
+                attachment_prefix = 'onboarding-attachments/'
+                attachment_files = [
+                    'acme-kr-bastion-key.zip',
+                    'kiro_login_guide.eml',
+                    'kiro_mcp_setup_guide.pptx'
+                ]
+                
+                # MIME 메시지 생성
+                from email.mime.multipart import MIMEMultipart
+                from email.mime.text import MIMEText
+                from email.mime.application import MIMEApplication
+                
+                msg = MIMEMultipart()
+                msg['Subject'] = email_subject
+                msg['From'] = 'noreply@example.com'
+                msg['To'] = email
+                
+                # 본문 추가
+                msg.attach(MIMEText(email_body, 'plain', 'utf-8'))
+                
+                # 첨부파일 추가
+                for filename in attachment_files:
+                    try:
+                        obj = s3.get_object(Bucket=attachment_bucket, Key=attachment_prefix + filename)
+                        attachment = MIMEApplication(obj['Body'].read())
+                        attachment.add_header('Content-Disposition', 'attachment', filename=filename)
+                        msg.attach(attachment)
+                    except Exception as e:
+                        print(f"Attachment {filename} not found: {e}")
+                
+                # 이메일 발송
+                ses.send_raw_email(
+                    Source='noreply@example.com',
+                    Destinations=[email],
+                    RawMessage={'Data': msg.as_string()}
+                )
+                print(f"Email sent to {email} with attachments")
+            except Exception as e:
+                # 첨부파일 없이 발송
+                try:
+                    ses.send_email(
+                        Source='noreply@example.com',
+                        Destination={'ToAddresses': [email]},
+                        Message={
+                            'Subject': {'Data': email_subject, 'Charset': 'UTF-8'},
+                            'Body': {'Text': {'Data': email_body, 'Charset': 'UTF-8'}}
+                        }
+                    )
+                    print(f"Email sent to {email} (without attachments)")
+                except Exception as e2:
+                    print(f"Email send failed: {str(e2)}")
+        
+        result = {
+            'user_id': user_id,
+            'email': email,
+            'display_name': display_name,
+            'start_url': start_url,
+            'user_exists': user_exists
+        }
+        print(json.dumps(result))
+        PYTHON_EOF
+      register: sso_result
+      
+    - name: Show result
+      debug:
+        var: sso_result.stdout_lines

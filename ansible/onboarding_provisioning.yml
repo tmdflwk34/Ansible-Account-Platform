@@ -1,0 +1,152 @@
+---
+- name: 통합 사용자 프로비저닝
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: 사용자 중복 체크
+      shell: |
+        python3 << 'PYTHON_EOF'
+        import boto3
+        import time
+        import json
+        
+        region = '{{ region }}'
+        instance_id = '{{ instance_id }}'
+        username = '{{ username }}'
+        
+        ssm = boto3.client('ssm', region_name=region)
+        
+        response = ssm.send_command(
+            InstanceIds=[instance_id],
+            DocumentName='AWS-RunShellScript',
+            Parameters={'commands': [f'id {username} 2>/dev/null && echo EXISTS || echo NOTFOUND']}
+        )
+        
+        command_id = response['Command']['CommandId']
+        time.sleep(2)
+        
+        result = ssm.get_command_invocation(
+            CommandId=command_id,
+            InstanceId=instance_id
+        )
+        
+        output = result.get('StandardOutputContent', '')
+        if 'EXISTS' in output:
+            print(json.dumps({'exists': True}))
+        else:
+            print(json.dumps({'exists': False}))
+        PYTHON_EOF
+      register: user_check
+      changed_when: false
+      
+    - name: Parse user check result
+      set_fact:
+        user_exists: "{{ (user_check.stdout | from_json).exists }}"
+    
+    - name: Fail if user exists
+      fail:
+        msg: "User {{ username }} already exists on {{ instance_id }}"
+      when: user_exists | bool
+    
+    - name: Create user and configure
+      shell: |
+        python3 << 'PYTHON_EOF'
+        import boto3
+        import time
+        import sys
+        
+        region = '{{ region }}'
+        instance_id = '{{ instance_id }}'
+        username = '{{ username }}'
+        uid = '{{ uid }}'
+        gid = '{{ gid }}'
+        role = '{{ role }}'
+        user_groups = {{ user_groups | default([]) | to_json }}
+        dry_run = {{ 'True' if (dry_run | default(false)) else 'False' }}
+        
+        ssm = boto3.client('ssm', region_name=region)
+        
+        # 사용자 생성 명령어
+        commands = [
+            f'getent group {gid} >/dev/null 2>&1 || groupadd -g {gid} {username}',
+            f'useradd -m -u {uid} -g {gid} -s /bin/bash {username}',
+            
+            # /fsx 설정 - 공유볼륨이므로 디렉토리가 없을 때 1회만 실행
+            f'if [ -d /fsx ] && [ ! -d /fsx/home/{username} ]; then mkdir -p /fsx/home/{username}/.ssh /fsx/tmp/{username} && echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCE1powIu8X4+fWMKy+Cy47o7oURKHTId5JRRcVYYLb0CrUkYdhB01dVUcT7lyeRKg40AetGmaZAxh+1b9f+I7koAh7Si3lw6D6kgxv0p3ni8TbgkHVE6bgNB0jmWJ3X50t4dEnIcU2fMPIR8iBrUlcwS1kk6H369W+4WyqPkVFbv9Uazp6u5mZU0/NBl8aexMlnO2h6l1TJOKmeIDMK5M5DgLLjmO4xKmZGWGKukxQMrHDoX8Ua9O/uqa6+sC+jlUCkeoijk3HA5Yetk7PESTfKrxZv5p3bM3hCNXKYlpBrcSGJDV4Nu2eIQ+EEPqnvfhTpEOt7c0rsNvs8TxTn2ID" > /fsx/home/{username}/.ssh/authorized_keys && chown -R {username}:{gid} /fsx/home/{username} /fsx/tmp/{username} && chmod 750 /fsx/home/{username} && chmod 700 /fsx/home/{username}/.ssh && chmod 600 /fsx/home/{username}/.ssh/authorized_keys && chmod 755 /fsx/tmp/{username}; fi',
+        ]
+        
+        # 권한 설정 (sudoers) - 개별 사용자 기반
+        if role == 'ops':
+            sudoers_lines = [
+                f'# {username} ops permissions',
+                f'Defaults:{username} use_pty, log_output, !authenticate',
+                f'Defaults:{username} logfile="/var/log/sudo-infra.log"',
+                '',
+                'Cmnd_Alias MONITORING = /usr/bin/systemctl status *, /usr/bin/journalctl *, /usr/bin/ps *, /usr/bin/top, /usr/bin/htop, /usr/bin/df *, /usr/bin/du *, /usr/bin/free *, /usr/bin/uptime, /usr/bin/who, /usr/bin/w, /usr/bin/last, /usr/bin/tail *, /usr/bin/cat /var/log/*, /usr/bin/less /var/log/*',
+                'Cmnd_Alias SLURM_MGMT = /opt/slurm/bin/scontrol *, /opt/slurm/bin/sacctmgr *, /usr/bin/systemctl reload slurmctld, /usr/bin/systemctl restart slurmctld',
+                'Cmnd_Alias CONFIG_EDIT = sudoedit /opt/slurm/etc/slurm.conf, sudoedit /etc/hosts',
+                'Cmnd_Alias GROUP_MGMT = /usr/sbin/gpasswd -a * *, /usr/sbin/gpasswd -d * *',
+                'Cmnd_Alias DOCKER_CMDS = /usr/bin/docker ps *, /usr/bin/docker run *, /usr/bin/docker ls *, /usr/bin/docker rm *, /usr/bin/docker images *, /usr/bin/docker exec *, /usr/bin/docker build *, /usr/bin/docker tag *, /usr/bin/docker push *',
+                'Cmnd_Alias SSM_MGMT = /usr/bin/systemctl restart amazon-ssm-agent, /usr/bin/systemctl start amazon-ssm-agent, /usr/bin/systemctl status amazon-ssm-agent, /usr/bin/systemctl enable amazon-ssm-agent, /usr/bin/snap install amazon-ssm-agent, /usr/bin/snap refresh amazon-ssm-agent',
+                'Cmnd_Alias PCLUSTER_MGMT = /usr/bin/systemctl restart clustermgtd, /usr/bin/systemctl start clustermgtd, /usr/bin/systemctl stop clustermgtd, /usr/bin/systemctl status clustermgtd, /usr/bin/systemctl restart slurm*, /usr/bin/systemctl start slurm*, /usr/bin/systemctl status slurm*',
+                'Cmnd_Alias DIAGNOSTICS = /usr/bin/ping *, /usr/bin/traceroute *, /usr/bin/netstat *, /usr/bin/ss *, /usr/sbin/iptables -L *, /usr/bin/tcpdump *',
+                'Cmnd_Alias SWAP_MANAGE = /usr/bin/fallocate *, /usr/bin/chmod *, /usr/sbin/mkswap *, /usr/sbin/swapon *, /usr/sbin/swapoff *',
+                'Cmnd_Alias PROC_KILL = /usr/bin/kill *, /usr/bin/pkill *, /usr/bin/killall *',
+                '',
+                f'{username} ALL=(root) NOPASSWD: MONITORING, SLURM_MGMT, CONFIG_EDIT, GROUP_MGMT, DOCKER_CMDS, SSM_MGMT, PCLUSTER_MGMT, DIAGNOSTICS, SWAP_MANAGE, PROC_KILL',
+                '',
+                'Cmnd_Alias BLOCKED = /bin/su, /usr/bin/sudo -i, /usr/bin/sudo -s, /usr/bin/passwd root, /usr/sbin/visudo, /usr/bin/systemctl reboot, /usr/bin/systemctl poweroff, /usr/bin/systemctl halt, /usr/bin/reboot, /usr/bin/shutdown, sudoedit /etc/sudoers*, sudoedit /etc/shadow, sudoedit /etc/passwd, sudoedit /etc/group',
+                f'{username} ALL=(root) !BLOCKED',
+            ]
+            sudoers_text = '\\n'.join(sudoers_lines)
+            commands.append(f"cat > /etc/sudoers.d/{username} << 'SUDOEOF'\n{sudoers_text}\nSUDOEOF")
+            commands.append(f'chmod 440 /etc/sudoers.d/{username}')
+        elif role == 'admin':
+            commands.append(f"echo '{username} ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/{username}")
+            commands.append(f'chmod 440 /etc/sudoers.d/{username}')
+        
+        # 그룹 추가
+        for group in user_groups:
+            commands.append(f'getent group {group} >/dev/null 2>&1 || groupadd {group}')
+            commands.append(f'gpasswd -a {username} {group}')
+        
+        if dry_run:
+            print("DRY RUN - Commands that would be executed:")
+            for i, cmd in enumerate(commands, 1):
+                print(f"{i}. {cmd}")
+            sys.exit(0)
+        
+        response = ssm.send_command(
+            InstanceIds=[instance_id],
+            DocumentName='AWS-RunShellScript',
+            Parameters={'commands': commands}
+        )
+        
+        command_id = response['Command']['CommandId']
+        
+        for _ in range(30):
+            time.sleep(2)
+            result = ssm.get_command_invocation(
+                CommandId=command_id,
+                InstanceId=instance_id
+            )
+            if result['Status'] in ['Success', 'Failed', 'Cancelled', 'TimedOut']:
+                break
+        
+        if result['Status'] != 'Success':
+            print(f"Failed: {result['Status']}")
+            print(f"Error: {result.get('StandardErrorContent', '')}")
+            sys.exit(1)
+        else:
+            print(f"User {username} created with UID/GID {uid}:{gid}")
+            print(f"Directories created: /home/{username}, /fsx/home/{username}, /fsx/tmp/{username}")
+            print(f"SSH key added to /fsx/home/{username}/.ssh/authorized_keys")
+            if user_groups:
+                print(f"Added to groups: {', '.join(user_groups)}")
+        PYTHON_EOF
+      register: create_result
+      
+    - name: Show result
+      debug:
+        var: create_result.stdout_lines

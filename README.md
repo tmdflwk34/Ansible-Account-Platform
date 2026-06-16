@@ -163,3 +163,39 @@ EC2 터미널 세션 내 크리티컬 실행 커맨드(rm, docker 등) 전수 �
 EC2 인프라 원격 접속 세션을 시간별 타임라인으로 감사합니다. 비승인 외부 네트워크 로그인 이상 원천 감지 및 인적 보안 책임 보장을 위한 기록입니다.
 
 ![사용자 접속 로그](docs/images/13-user-access-log.png)
+
+#### 14. GitHub 활동 로그 조회
+
+연구원들의 소스코드 Push/Create 행위를 대시보드에 연동 기록합니다. 비인가 저장소로의 소스 이동을 실시간 감사하고, GitHub 계정명과 연구 세션을 매핑합니다.
+
+![GitHub 활동 로그](docs/images/14-github-activity-log.png)
+
+#### 15. GitHub 활동 로그 상세
+
+푸시 건별 커밋 메타데이터(변형 항목, 대상 브랜치, 작업 일시)를 상세 분석 모달로 제공합니다. 코드 내 하드코딩된 API Key, 패키지 변형 등 보안 위협 커밋을 식별합니다.
+
+![GitHub 활동 로그 상세](docs/images/15-github-activity-detail.png)
+
+#### 16. GitHub 프로젝트 권한 로그 조회
+
+Git 팀의 리포지토리 읽기/쓰기 권한 변경 이력을 전수 수집하여 비인가 사용자의 임의 권한 수정을 추적합니다.
+
+![GitHub 프로젝트 권한 로그](docs/images/16-github-permission-log.png)
+
+#### 17. 과제별 클라우드 서버 비용 모니터링
+
+연구 과제 단위(PRJ0000 항체, PRJ0000 LNP 등) AWS 클라우드 서버 비용 추이를 정산합니다. GPU/CPU 점유 상태와 담당자 정보를 연계하여 유휴 자원 과금을 해소합니다.
+
+![과제별 비용 모니터링](docs/images/17-cost-monitoring.png)
+
+#### 18. Bedrock 게이트웨이 사용자 관리
+
+사용자별 월 예산 임계 상한선을 설정하고, 비정상 세션 또는 과도한 사용 시 API를 자동 비활성화합니다.
+
+![Bedrock 게이트웨이 사용자 관리](docs/images/18-bedrock-user-management.png)
+
+#### 19. Bedrock 게이트웨이 사용량 상세
+
+모델별(DeepSeek, AWS Bedrock, Nova 등) 호출 토큰 통계를 분석하고, 입출력 토큰 및 과금 비율을 산출하는 팝업을 제공합니다.
+
+![Bedrock 게이트웨이 사용량 상세](docs/images/19-bedrock-usage-detail.png)

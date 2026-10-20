@@ -57,6 +57,7 @@ ansible/
 ### backend-admin
 | 변수 | 값 |
 |------|-----|
+| JWT_SECRET_KEY | 외부에서 주입하는 JWT 서명 비밀값. 필수이며 이전에 공개된 기본값은 거부 |
 | AWS_DEFAULT_REGION | us-west-2 |
 | SES_SENDER_EMAIL | noreply@example.com |
 | SES_APPROVER_EMAIL | admin@example.com |
@@ -70,6 +71,12 @@ ansible/
 | VITE_COGNITO_REDIRECT | 인증 콜백 URL |
 
 ## 실행
+
+`JWT_SECRET_KEY`를 외부 비밀 저장소에서 호스트 프로세스 환경으로 공급해야 합니다.
+Compose가 이를 백엔드 컨테이너에 전달합니다. 백엔드 디렉토리의 `.env` 파일에만
+저장하는 방식에 의존하지 마세요. 키가 없거나 공백뿐이거나 이전에 공개된 값이면
+인증 모듈을 시작하지 않습니다. 별도 Bedrock Gateway 포털 모듈을 배포한다면
+같은 환경변수를 사용합니다. 서명 비밀값은 소스와 환경파일에 커밋하지 않습니다.
 
 저장소에 공개됐던 TLS 개인키와 인증서는 사용하지 않습니다. 배포 전에 새로운
 개인키와 그에 대응하는 인증서를 저장소 밖에 준비하고, 개인키 파일 권한은

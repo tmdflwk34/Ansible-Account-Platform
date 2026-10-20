@@ -9,7 +9,14 @@ import hashlib
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
-SECRET_KEY = os.environ["JWT_SECRET_KEY"]
+SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
+if (
+    not SECRET_KEY
+    or not SECRET_KEY.strip()
+    or hashlib.sha256(SECRET_KEY.encode("utf-8")).hexdigest()
+    == "cd10b8a868cf4a650ae2e5022ce51ba95e01161e2a13f4140d3263f83a8d74bb"
+):
+    raise RuntimeError("JWT_SECRET_KEY must be set to a non-empty, unexposed secret")
 SECRET_NAME = os.getenv("PORTAL_SECRET_NAME", "acme-portal/admin-credentials")
 AWS_REGION = os.getenv("AWS_REGION", "us-west-2")
 

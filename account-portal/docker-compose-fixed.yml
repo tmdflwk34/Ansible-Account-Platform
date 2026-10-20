@@ -33,6 +33,7 @@ services:
       - /home/ubuntu/.aws:/root/.aws:ro
       - ./backend-admin/data:/app/data
     environment:
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:?Set JWT_SECRET_KEY to an external signing secret}
       - AWS_DEFAULT_REGION=us-west-2
       - AWS_EC2_METADATA_DISABLED=false
       - BEDROCK_GW_ENV=dev

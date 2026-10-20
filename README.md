@@ -71,8 +71,30 @@ ansible/
 
 ## 실행
 
+저장소에 공개됐던 TLS 개인키와 인증서는 사용하지 않습니다. 배포 전에 새로운
+개인키와 그에 대응하는 인증서를 저장소 밖에 준비하고, 개인키 파일 권한은
+`600`으로 제한합니다. 운영 환경에서는 신뢰할 수 있는 인증서를 사용하세요.
+이미 배포된 서버의 인증서 교체는 별도 운영 작업입니다.
+
+로컬 테스트용 자체 서명 인증서는 다음과 같이 새로 생성할 수 있습니다.
+
+```bash
+install -d -m 700 "$HOME/.local/share/userportal-tls"
+export TLS_CERT_PATH="$HOME/.local/share/userportal-tls/server.crt"
+export TLS_KEY_PATH="$HOME/.local/share/userportal-tls/server.key"
+umask 077
+openssl req -x509 -newkey rsa:2048 -nodes -days 365 \
+  -keyout "$TLS_KEY_PATH" -out "$TLS_CERT_PATH" \
+  -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost'
+```
+
+운영 인증서를 사용하는 경우 `TLS_CERT_PATH`와 `TLS_KEY_PATH`에 해당 파일의
+절대 경로를 지정합니다. 둘 중 하나라도 없거나 파일이 존재하지 않으면 Compose는
+시작하지 않습니다. 개인키와 실제 자격 증명이 담긴 환경파일은 커밋하지 마세요.
+
 ```bash
 cd /home/app/account-portal
+docker compose -f docker-compose-fixed.yml config --quiet
 docker compose -f docker-compose-fixed.yml up -d --build
 ```
 

@@ -1,4 +1,9 @@
 # Environment
+.env
+.env.*
+!.env.example
+account-portal/nginx/selfsigned.key
+account-portal/nginx/selfsigned.crt
 
 # Logs
 *.log
